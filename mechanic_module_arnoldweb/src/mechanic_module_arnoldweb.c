@@ -54,10 +54,10 @@
  * of the map and the final state of the system (MEGNO). We also prepare the initial
  * condition for each worker node -- we need here a vector of length 6. 
  */
-int arnoldweb_init(int mpi_size, int node, moduleInfo *md, configData *d) {
+int arnoldweb_init(int mpi_size, int node, moduleInfo *info, configData *config) {
   
-  md->mrl = 4;
-  md->irl = 6;
+  info->mrl = 4;
+  info->irl = 6;
   
   return MECHANIC_TASK_SUCCESS;
 }
@@ -70,22 +70,24 @@ int arnoldweb_init(int mpi_size, int node, moduleInfo *md, configData *d) {
  * vector is allocated according to the `md->irl` variable. We use the default,
  * two-dimensional mapping of the coordinates of the current task (r->coords).
  */
-int arnoldweb_task_prepare(int node, moduleInfo *md, configData *d, masterData *inidata, masterData *r) {
+int arnoldweb_task_prepare(int node, moduleInfo *info, configData *config, masterData *in, masterData *out) {
   double xmin, xmax, ymin, ymax;
 
-  xmin  = 0.320;
-  xmax  = 0.330;
-  ymin  = 0.101;
-  ymax  = 0.106;         
+  /* Global map range (equivalent of frequencies space) */
+  xmin  = 0.8;
+  xmax  = 1.2;
+  ymin  = 0.8;
+  ymax  = 1.2;         
 
-  inidata->res[0] = 0.131;
-  inidata->res[1] = 0.132;
-  inidata->res[2] = 0.212;
+  /* Initial condition - angles */
+  in->res[0] = 0.131;
+  in->res[1] = 0.132;
+  in->res[2] = 0.212;
 
   /* Map coordinates */  
-  inidata->res[3] = xmin + r->coords[0]*(xmax-xmin)/(1.0*d->xres);
-  inidata->res[4] = ymin + r->coords[1]*(ymax-ymin)/(1.0*d->yres);
-  inidata->res[5] = 1.0L;  
+  in->res[3] = xmin + out->coords[0]*(xmax-xmin)/(1.0*config->xres);
+  in->res[4] = ymin + out->coords[1]*(ymax-ymin)/(1.0*config->yres);
+  in->res[5] = 1.0;  
 
   return MECHANIC_TASK_SUCCESS;
 }
@@ -100,29 +102,29 @@ int arnoldweb_task_prepare(int node, moduleInfo *md, configData *d, masterData *
  * The Arnold web: We take the prepared initial condition and run the smegno() function.
  * After the computations are finished, we return the final result to the master node.
  */
-int arnoldweb_task_process(int node, moduleInfo *md, configData *d, masterData *inidata, masterData *r) {
-  double err, xv[6], tend, step, eps;
-  int smod;
+int arnoldweb_task_process(int node, moduleInfo *info, configData *config, masterData *in, masterData *out) {
+  double err, xv[6], tend, step, eps, result;
 
-  step  = 0.309016994374947L; // 0.5*(sqrt(5)-1)/2
-  tend  = 5000.0L;
-  smod  = 1000L;
-  eps   = 0.001L;
+  step  = 0.25*(pow(5,0.5)-1)/2.0;
+  tend  = 20000.0;
+  eps   = 0.01;
 
   /* Initial data */  
-  xv[0] = inidata->res[0];
-  xv[1] = inidata->res[1];
-  xv[2] = inidata->res[2];
-  xv[3] = inidata->res[3];
-  xv[4] = inidata->res[4];
-  xv[5] = inidata->res[5];  
+  xv[0] = in->res[0];
+  xv[1] = in->res[1];
+  xv[2] = in->res[2];
+  xv[3] = in->res[3];
+  xv[4] = in->res[4];
+  xv[5] = in->res[5];  
+
+  /* Numerical integration goes here */
+  result = smegno2(xv, step, tend, eps, &err);
   
   /* Assign the master result */
-  r->res[0] = xv[3];
-  r->res[1] = xv[4];
-  r->res[2] = smegno_saba3(xv, step, tend, eps, smod, &err);
-  //r->res[2] = smegno_leapfrog(xv, step, tend, eps, smod, &err);
-  r->res[3] = err;
+  out->res[0] = xv[3];
+  out->res[1] = xv[4];
+  out->res[2] = result;
+  out->res[3] = err;
 
   return MECHANIC_TASK_SUCCESS;
 }

@@ -13,7 +13,7 @@
 /**
  * @function
  * The right hand sides + variational equations of the Hamiltonian model of the Arnold web, 
- * see Guzzo+ Science 289 (2000)
+ * see Froeschle+ Science 289 (2000)
  */
 void vinteraction(double *y,  double *a, double *dy, double *v, double eps) {
   double I1, I2, I3, f1, f2, f3, sf1, sf2;
@@ -99,28 +99,15 @@ double variat(double *xv, double *dy, double eps) {
 
 /**
  * @function
- * Evaluates the norm of a vector
+ * Normalizes the variational vector (flag = 1)
  */
-double checknorm(int dim, double *a) {
-  double tmp = 0.0L;
-  int i;
-
-  for(i=1; i<=dim; i++) tmp += a[i]*a[i];
-
-  return sqrtl(tmp);
-}
-
-/**
- * @function
- * Normalizes the variational vector
- */
-double norm(int dim, double *a) {
-  double tmp = 0.0L;
+double norm(int dim, double *a, int flag) {
+  double tmp = 0.0;
   int i;
   
-  for(i=1; i<=dim; i++) tmp += a[i]*a[i];
-  tmp = sqrtl(tmp);
-  for(i=1; i<=dim; i++) a[i]= a[i]/tmp;  
+  for (i=1; i<=dim; i++) tmp += a[i]*a[i];
+  tmp = sqrt(tmp);
+  if (flag) for (i=1; i<=dim; i++) a[i]= a[i]/tmp;  
 
   return tmp;
 }
@@ -129,57 +116,50 @@ double norm(int dim, double *a) {
  * @function
  * Symplectic MEGNO with the classical Leapfrog integrator
  */
-double smegno_leapfrog(double *xv, double step, double tend, double eps, int smod, double *enerr) {
-  double c1, c2;
+double smegno2(double *xv, double step, double tend, double eps, double *err) {
+  double c1, c2, d1;
   double Y0, mY0, Y1, mY1, maxe;   
-  double acc[6], dy[6], var[6], t, dt, en, en0, h, delta, delta0;
+  double acc[6], dy[6], var[6], t, en, en0, h, delta, delta0;
   long int ks;
-  int i;
-  //double v0;
+  int i, checkout;
+  double v0;
    
-  c1    = 0.5L;
-  c2    = 1.0L;
-                  
-  t     = 0.0L;
-  maxe  = 0.0L;
-  dt    = step;
+  c1    = 0.5-sqrt(3.0)/10.0;
+  c2    = sqrt(3.0)/3.0;
+  d1    = 0.5;
+
+  t     = 0.0;
+  maxe  = 0.0;
+  checkout = 1000;
   Y0    = mY0   = Y1    = mY1   = 0.0;
+
+  /* Set the tangent vector */
   for (i=1; i<=6; i++) dy[i] = rand()/(RAND_MAX+1.0);
   
-  delta0= norm(6, dy); 
+  /* Normalize the tangent vector */
+  delta0= norm(6, dy, 1); 
   en0   = energy(xv, eps);
-  //  v0    = variat(xv, dy, eps);
+  v0    = variat(xv, dy, eps);
   
-  // integrator + variations Leapfrog
+  /* SABA2 integrator + variations */
   
   ks    = 0;
   
   while (t <= tend) { 
   
-    // 1st kick
-    vinteraction(xv, acc, dy, var, eps);
-    h     = c1*dt;    
-    xv[3] = xv[3] + acc[3]*h;
-    xv[4] = xv[4] + acc[4]*h;
-    xv[5] = xv[5] + acc[5]*h; 
-    
-    dy[3] = dy[3] + var[3]*h;    
-    dy[4] = dy[4] + var[4]*h;        
-    dy[5] = dy[5] + var[5]*h;            
-    
-    // 1st drift
-    h     = c2*dt;    
+    /* 1st drift */
+    h     = c1*step;    
     xv[0] = xv[0] + xv[3]*h;
     xv[1] = xv[1] + xv[4]*h;
-    xv[2] = xv[2] + 1.00*h;
+    xv[2] = xv[2] + 1.0*h;
     
     dy[0] = dy[0] + dy[3]*h;    
     dy[1] = dy[1] + dy[4]*h;        
     dy[2] = dy[2];        
     
-    // 2nd kick
+    /* 1st kick */
     vinteraction(xv, acc, dy, var, eps);
-    h     = c1*dt;    
+    h     = d1*step;    
     xv[3] = xv[3] + acc[3]*h;
     xv[4] = xv[4] + acc[4]*h;
     xv[5] = xv[5] + acc[5]*h; 
@@ -187,27 +167,36 @@ double smegno_leapfrog(double *xv, double step, double tend, double eps, int smo
     dy[3] = dy[3] + var[3]*h;    
     dy[4] = dy[4] + var[4]*h;        
     dy[5] = dy[5] + var[5]*h;            
- 
-    // integrator step done
+  
+    /* 2nd drift */
+    h     = c2*step;    
+    xv[0] = xv[0] + xv[3]*h;
+    xv[1] = xv[1] + xv[4]*h;
+    xv[2] = xv[2] + 1.0*h;
     
-    t = (ks++)*dt;
+    dy[0] = dy[0] + dy[3]*h;    
+    dy[1] = dy[1] + dy[4]*h;        
+    dy[2] = dy[2]; 
+    
+    ks++;
+    t = ks*step;
 
-    // MEGNO
-    delta   = checknorm(6, dy);    
-    Y1      =  Y0*(ks-1.0L)/(1.0L*ks) + 2.0L*logl(delta/delta0);
-    mY1     = mY0*(ks-1.0L)/(1.0L*ks) + Y1/(1.0L*ks);
+    /* MEGNO */
+    delta   = norm(6, dy, 0);    
+    Y1      =  Y0*((double)ks-1.0)/((double)ks) + 2.0*log(delta/delta0);
+    mY1     = mY0*((double)ks-1.0)/((double)ks) + Y1/((double)ks);
     Y0      = Y1;
     mY0     = mY1;
     delta0  = delta;
     
-    // relative errors of the energy and the variational integrator
-    if (ks%smod == 0) {  
+    /* relative errors of the energy and the variational integrator */
+    if (ks%checkout == 0) {  
       en = fabs((energy(xv,eps)-en0)/en0);
       if (en>maxe) maxe = en;
     }
   }    
 
-  *enerr = maxe;
+  *err = maxe;
   return mY1;
 }      
 
@@ -215,41 +204,43 @@ double smegno_leapfrog(double *xv, double step, double tend, double eps, int smo
  * @function
  * Symplectic MEGNO with the SABA3 integrator by Robutel & Laskar
  */
-double smegno_saba3(double *xv, double step, double tend, double eps, int smod, double *enerr) {
+double smegno3(double *xv, double step, double tend, double eps,  double *err) {
   double c1, c2, d1, d2;
   double Y0, mY0, Y1, mY1, maxe;   
-  double acc[6], dy[6], var[6], t, dt, en, en0, h, delta, delta0;
+  double acc[6], dy[6], var[6], t, en, en0, h, delta, delta0;
   long int ks;
-  int i;
-  //double v0;
+  int i, checkout;
+  double v0;
    
   // SABA3 coefficients
-  c1    = 1.0/2.0L - sqrtl(15.0L)/10.0L;
-  c2    = sqrtl(15.0L)/10.0L;
-  d1    = 5.0L/18.0L;
-  d2    = 4.0L/9.0L; 
+  c1    = 0.5 - sqrt(15.0)/10.0;
+  c2    = sqrt(15.0)/10.0;
+  d1    = 5.0/18.0;
+  d2    = 4.0/9.0; 
                   
-  t     = 0.0L;
-  maxe  = 0.0L;
-  dt    = step;
+  t     = 0.0;
+  maxe  = 0.0;
   Y0    = mY0   = Y1    = mY1   = 0.0;
+
+  /* Set the tangent vector */
   for (i=1; i<=6; i++) dy[i] = rand()/(RAND_MAX+1.0);
   
-  delta0= norm(6, dy); 
+  /* Randomize the tangent vector */
+  delta0= norm(6, dy, 1); 
+
   en0   = energy(xv, eps);
-  //  v0    = variat(xv, dy, eps);
+  v0    = variat(xv, dy, eps);
   
-  // integrator + variations SABA3
-  
+  /* SABA3 integrator + variations */ 
   ks    = 0;
   
   while (t <= tend) { 
   
     // 1st drift
-    h     = c1*dt;    
+    h     = c1*step;    
     xv[0] = xv[0] + xv[3]*h;
     xv[1] = xv[1] + xv[4]*h;
-    xv[2] = xv[2] + 1.00*h;
+    xv[2] = xv[2] + 1.0*h;
     
     dy[0] = dy[0] + dy[3]*h;    
     dy[1] = dy[1] + dy[4]*h;        
@@ -257,7 +248,7 @@ double smegno_saba3(double *xv, double step, double tend, double eps, int smod, 
     
     // 1st kick
     vinteraction(xv, acc, dy, var, eps);
-    h     = d1*dt;    
+    h     = d1*step;    
     xv[3] = xv[3] + acc[3]*h;
     xv[4] = xv[4] + acc[4]*h;
     xv[5] = xv[5] + acc[5]*h; 
@@ -267,10 +258,10 @@ double smegno_saba3(double *xv, double step, double tend, double eps, int smod, 
     dy[5] = dy[5] + var[5]*h;            
     
     // 2nd drift
-    h     = c2*dt;    
+    h     = c2*step;    
     xv[0] = xv[0] + xv[3]*h;
     xv[1] = xv[1] + xv[4]*h;
-    xv[2] = xv[2] + 1.00*h;
+    xv[2] = xv[2] + 1.0*h;
     
     dy[0] = dy[0] + dy[3]*h;    
     dy[1] = dy[1] + dy[4]*h;        
@@ -278,7 +269,7 @@ double smegno_saba3(double *xv, double step, double tend, double eps, int smod, 
     
     // 2nd kick
     vinteraction(xv, acc, dy, var, eps);
-    h     = d2*dt;    
+    h     = d2*step;    
     xv[3] = xv[3] + acc[3]*h;
     xv[4] = xv[4] + acc[4]*h;
     xv[5] = xv[5] + acc[5]*h; 
@@ -288,7 +279,7 @@ double smegno_saba3(double *xv, double step, double tend, double eps, int smod, 
     dy[5] = dy[5] + var[5]*h;            
  
     // 3rd drift
-    h     = c2*dt;
+    h     = c2*step;
     xv[0] = xv[0] + xv[3]*h;
     xv[1] = xv[1] + xv[4]*h;
     xv[2] = xv[2] + 1.0*h;
@@ -299,7 +290,7 @@ double smegno_saba3(double *xv, double step, double tend, double eps, int smod, 
 
     // 3rd kick
     vinteraction(xv, acc, dy, var, eps);
-    h     = d1*dt;    
+    h     = d1*step;    
     xv[3] = xv[3] + acc[3]*h;
     xv[4] = xv[4] + acc[4]*h;
     xv[5] = xv[5] + acc[5]*h; 
@@ -309,7 +300,7 @@ double smegno_saba3(double *xv, double step, double tend, double eps, int smod, 
     dy[5] = dy[5] + var[5]*h;            
 
     // final drift
-    h     = c1*dt;
+    h     = c1*step;
     xv[0] = xv[0] + xv[3]*h;
     xv[1] = xv[1] + xv[4]*h;
     xv[2] = xv[2] + 1.0*h;
@@ -318,26 +309,25 @@ double smegno_saba3(double *xv, double step, double tend, double eps, int smod, 
     dy[1] = dy[1] + dy[4]*h;        
     dy[2] = dy[2];            
     
-    // integrator step done
-    
-    t = (ks++)*dt;
+    ks++; 
+    t = ks*step;
 
-    // MEGNO
-    delta   = checknorm(6, dy);    
-    Y1      =  Y0*(ks-1.0L)/(1.0L*ks) + 2.0L*logl(delta/delta0);
-    mY1     = mY0*(ks-1.0L)/(1.0L*ks) + Y1/(1.0L*ks);
+    /* MEGNO */
+    delta   = norm(6, dy, 0);    
+    Y1      =  Y0*((double)ks-1.0)/((double)ks) + 2.0*log(delta/delta0);
+    mY1     = mY0*((double)ks-1.0)/((double)ks) + Y1/((double)ks);
     Y0      = Y1;
     mY0     = mY1;
     delta0  = delta;
     
     // relative errors of the energy and the variational integrator
-    if (ks%smod == 0) {  
+    if (ks%checkout == 0) {  
       en = fabs((energy(xv,eps)-en0)/en0);
       if (en>maxe) maxe = en;
     }
   }    
 
-  *enerr = maxe;
+  *err = maxe;
   return mY1;
 }      
 

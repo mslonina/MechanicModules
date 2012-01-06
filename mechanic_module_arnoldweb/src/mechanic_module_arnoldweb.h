@@ -5,7 +5,7 @@
 #define MECHANIC_TASK_SUCCESS 0
 #endif
 
-double smegno_saba3(double *xv, double step, double tend, double eps, int smod, double *enerr);
-double smegno_leapfrog(double *xv, double step, double tend, double eps, int smod, double *enerr);
+double smegno2(double *xv, double step, double tend, double eps, double *err);
+double smegno3(double *xv, double step, double tend, double eps, double *err);
 
 #endif 
