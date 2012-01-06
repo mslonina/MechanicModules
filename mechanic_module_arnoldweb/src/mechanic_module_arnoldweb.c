@@ -87,7 +87,7 @@ int arnoldweb_task_prepare(int node, moduleInfo *info, configData *config, maste
   /* Map coordinates */  
   in->res[3] = xmin + out->coords[0]*(xmax-xmin)/(1.0*config->xres);
   in->res[4] = ymin + out->coords[1]*(ymax-ymin)/(1.0*config->yres);
-  in->res[5] = 1.0;  
+  in->res[5] = 0.01;  
 
   return MECHANIC_TASK_SUCCESS;
 }

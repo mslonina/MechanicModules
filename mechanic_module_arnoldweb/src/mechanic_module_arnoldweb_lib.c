@@ -40,7 +40,7 @@ void vinteraction(double *y,  double *a, double *dy, double *v, double eps) {
   // right hand sides  
   a[0] =  I1;
   a[1] =  I2;
-  a[2] =  I3; 
+  a[2] =  1.0; 
   a[3] = -sf1*dif2;
   a[4] = -sf2*dif2;
   a[5] = -sf3*dif2;
@@ -77,7 +77,7 @@ double energy(double *y, double eps) {
   cf3  = cos(f3);
   
   dif  = eps/(cf1 + cf2 + cf3 + 4);
-  en   = I1*I1/2.0L + I2*I2/2.0L + I3 + dif;
+  en   = I1*I1/2.0 + I2*I2/2.0 + I3 + dif;
   
   return en;  
 }
@@ -116,10 +116,10 @@ double norm(int dim, double *a, int flag) {
  * @function
  * Symplectic MEGNO with the classical Leapfrog integrator
  */
-double smegno2(double *xv, double step, double tend, double eps, double *err) {
+double smegno2(double *xv0, double step, double tend, double eps, double *err) {
   double c1, c2, d1;
   double Y0, mY0, Y1, mY1, maxe;   
-  double acc[6], dy[6], var[6], t, en, en0, h, delta, delta0;
+  double acc[6], dy[6], var[6], xv[6], t, en, en0, h, delta, delta0;
   long int ks;
   int i, checkout;
   double v0;
@@ -133,8 +133,11 @@ double smegno2(double *xv, double step, double tend, double eps, double *err) {
   checkout = 1000;
   Y0    = mY0   = Y1    = mY1   = 0.0;
 
+  /* Initialize state vector */
+  for (i=0; i<=6; i++) xv[i] = xv0[i];
+
   /* Set the tangent vector */
-  for (i=1; i<=6; i++) dy[i] = rand()/(RAND_MAX+1.0);
+  for (i=0; i<=6; i++) dy[i] = rand()/(RAND_MAX+1.0);
   
   /* Normalize the tangent vector */
   delta0= norm(6, dy, 1); 
@@ -204,10 +207,10 @@ double smegno2(double *xv, double step, double tend, double eps, double *err) {
  * @function
  * Symplectic MEGNO with the SABA3 integrator by Robutel & Laskar
  */
-double smegno3(double *xv, double step, double tend, double eps,  double *err) {
+double smegno3(double *xv0, double step, double tend, double eps,  double *err) {
   double c1, c2, d1, d2;
   double Y0, mY0, Y1, mY1, maxe;   
-  double acc[6], dy[6], var[6], t, en, en0, h, delta, delta0;
+  double acc[6], dy[6], var[6], xv[6], t, en, en0, h, delta, delta0;
   long int ks;
   int i, checkout;
   double v0;
@@ -222,8 +225,11 @@ double smegno3(double *xv, double step, double tend, double eps,  double *err) {
   maxe  = 0.0;
   Y0    = mY0   = Y1    = mY1   = 0.0;
 
+  /* Initialize state vector */
+  for (i=0; i<=6; i++) xv[i] = xv0[i];
+
   /* Set the tangent vector */
-  for (i=1; i<=6; i++) dy[i] = rand()/(RAND_MAX+1.0);
+  for (i=0; i<=6; i++) dy[i] = rand()/(RAND_MAX+1.0);
   
   /* Randomize the tangent vector */
   delta0= norm(6, dy, 1); 
