@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.8)
-project (mechanic_module_arnold)
+project (mechanic_module_arnoldweb)
 
 include (CheckIncludeFiles)
 include (CheckLibraryExists)
