@@ -70,27 +70,27 @@
 /**
  * Implementation of module_init().
  */
-int mandelbrot_init(int mpi_size, int node, moduleInfo* md, configData* d){
+int mandelbrot_init(int mpi_size, int node, TaskInfo* md, TaskConfig* d){
 
-  md->mrl = 4;
-  md->irl = 4;
+  md->output_length = 4;
+  md->input_length = 4;
 
-  return 0;
+  return MECHANIC_TASK_SUCCESS;
 }
 
 /**
  * Implementation of module_cleanup().
  */
-int mandelbrot_cleanup(int mpi_size, int node, moduleInfo* md, configData* d){
+int mandelbrot_cleanup(int mpi_size, int node, TaskInfo* md, TaskConfig* d){
 
-  return 0;
+  return MECHANIC_TASK_SUCCESS;
 }
 
 /**
  * Implementation of module_task_process().
  */
-int mandelbrot_task_process(int worker, moduleInfo *md, configData* d,
-    masterData* inidata, masterData* r){
+int mandelbrot_task_process(int worker, TaskInfo *md, TaskConfig* d,
+    TaskData* inidata, TaskData* r){
 
   double real_min, real_max, imag_min, imag_max;
   double scale_real, scale_imag;
@@ -106,16 +106,16 @@ int mandelbrot_task_process(int worker, moduleInfo *md, configData* d,
   scale_real = (real_max - real_min) / ((double) d->xres - 1.0);
   scale_imag = (imag_max - imag_min) / ((double) d->yres - 1.0);
 
-  r->res[0] = real_min + r->coords[0] * scale_real;
-  r->res[1] = imag_max - r->coords[1] * scale_imag;
+  r->data[0] = real_min + r->coords[0] * scale_real;
+  r->data[1] = imag_max - r->coords[1] * scale_imag;
 
   /* Mandelbrot set */
-  r->res[2] = mandelbrot_generate_fractal(r->res[0], r->res[1], c);
+  r->data[2] = mandelbrot_generate_fractal(r->data[0], r->data[1], c);
 
   /* We also store information about the worker */
-  r->res[3] = (double) worker;
+  r->data[3] = (double) worker;
 
-  return 0;
+  return MECHANIC_TASK_SUCCESS;
 }
 
 /**

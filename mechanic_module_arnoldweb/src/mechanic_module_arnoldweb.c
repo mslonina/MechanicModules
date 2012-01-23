@@ -47,17 +47,17 @@
  *
  * This function is called very early during module initialization. We must set up here
  * some basic information on the master data storage -- the length of the initial
- * condition vector `irl`, which is sended to each worker node and the length of the
- * master result `mrl`, which is sended from the worker node to the master. 
+ * condition vector `input_length`, which is sended to each worker node and the length of the
+ * master result `output_length`, which is sended from the worker node to the master. 
  *
  * The Arnold Web: Since we are developing the dynamical map, we need to store coordinates
  * of the map and the final state of the system (MEGNO). We also prepare the initial
  * condition for each worker node -- we need here a vector of length 6. 
  */
-int arnoldweb_init(int mpi_size, int node, moduleInfo *info, configData *config) {
+int arnoldweb_init(int mpi_size, int node, TaskInfo *info, TaskConfig *config) {
   
-  info->mrl = 4;
-  info->irl = 6;
+  info->output_length = 4;
+  info->input_length = 6;
   
   return MECHANIC_TASK_SUCCESS;
 }
@@ -67,10 +67,10 @@ int arnoldweb_init(int mpi_size, int node, moduleInfo *info, configData *config)
  * Implements module_task_prepare().
  *
  * We prepare here the initial condition for the task. The length of the `inidata->res`
- * vector is allocated according to the `md->irl` variable. We use the default,
+ * vector is allocated according to the `md->input_length` variable. We use the default,
  * two-dimensional mapping of the coordinates of the current task (r->coords).
  */
-int arnoldweb_task_prepare(int node, moduleInfo *info, configData *config, masterData *in, masterData *out) {
+int arnoldweb_task_prepare(int node, TaskInfo *info, TaskConfig *config, TaskData *in, TaskData *out) {
   double xmin, xmax, ymin, ymax;
 
   /* Global map range (equivalent of frequencies space) */
@@ -80,14 +80,14 @@ int arnoldweb_task_prepare(int node, moduleInfo *info, configData *config, maste
   ymax  = 1.2;         
 
   /* Initial condition - angles */
-  in->res[0] = 0.131;
-  in->res[1] = 0.132;
-  in->res[2] = 0.212;
+  in->data[0] = 0.131;
+  in->data[1] = 0.132;
+  in->data[2] = 0.212;
 
   /* Map coordinates */  
-  in->res[3] = xmin + out->coords[0]*(xmax-xmin)/(1.0*config->xres);
-  in->res[4] = ymin + out->coords[1]*(ymax-ymin)/(1.0*config->yres);
-  in->res[5] = 0.01;  
+  in->data[3] = xmin + out->coords[0]*(xmax-xmin)/(1.0*config->xres);
+  in->data[4] = ymin + out->coords[1]*(ymax-ymin)/(1.0*config->yres);
+  in->data[5] = 0.01;  
 
   return MECHANIC_TASK_SUCCESS;
 }
@@ -102,7 +102,7 @@ int arnoldweb_task_prepare(int node, moduleInfo *info, configData *config, maste
  * The Arnold web: We take the prepared initial condition and run the smegno() function.
  * After the computations are finished, we return the final result to the master node.
  */
-int arnoldweb_task_process(int node, moduleInfo *info, configData *config, masterData *in, masterData *out) {
+int arnoldweb_task_process(int node, TaskInfo *info, TaskConfig *config, TaskData *in, TaskData *out) {
   double err, xv[6], tend, step, eps, result;
 
   step  = 0.25*(pow(5,0.5)-1)/2.0;
@@ -110,21 +110,21 @@ int arnoldweb_task_process(int node, moduleInfo *info, configData *config, maste
   eps   = 0.01;
 
   /* Initial data */  
-  xv[0] = in->res[0];
-  xv[1] = in->res[1];
-  xv[2] = in->res[2];
-  xv[3] = in->res[3];
-  xv[4] = in->res[4];
-  xv[5] = in->res[5];  
+  xv[0] = in->data[0];
+  xv[1] = in->data[1];
+  xv[2] = in->data[2];
+  xv[3] = in->data[3];
+  xv[4] = in->data[4];
+  xv[5] = in->data[5];  
 
   /* Numerical integration goes here */
   result = smegno2(xv, step, tend, eps, &err);
   
   /* Assign the master result */
-  out->res[0] = xv[3];
-  out->res[1] = xv[4];
-  out->res[2] = result;
-  out->res[3] = err;
+  out->data[0] = xv[3];
+  out->data[1] = xv[4];
+  out->data[2] = result;
+  out->data[3] = err;
 
   return MECHANIC_TASK_SUCCESS;
 }

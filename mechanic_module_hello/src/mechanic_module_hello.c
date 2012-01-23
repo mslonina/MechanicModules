@@ -72,7 +72,7 @@
  * This will tell Mechanic to run on three nodes, in a task farm mode,
  * with one master node and two workers. The master node will send default
  * initial condition (pixel coordinates) to each worker and receive data
- * in @c masterData structure (in this case the coordinates of the pixel).
+ * in @c TaskData structure (in this case the coordinates of the pixel).
  *
  * The output should be similar to:
  *
@@ -162,10 +162,10 @@
  *
  * - @c hello_init is called on module initialization
  *   and you need to provide some information about the module, especially,
- *   @c md->mrl, which is the length of the results array sended from the
- *   worker node to master node. The @c moduleInfo type contains information
+ *   @c md->output_length, which is the length of the results array sended from the
+ *   worker node to master node. The @c TaskInfo type contains information
  *   about the module, and will be extended in the future. The structure is
- *   available for all module functions. The @c moduleInfo type has
+ *   available for all module functions. The @c TaskInfo type has
  *   the following shape:
  *   @code
  *   @icode core/mechanic.h MODULEINFO
@@ -180,7 +180,7 @@
  *   There are technically no contradictions for including Fortran based
  *   code. In this simple example we just assign coordinates of the
  *   simulation (see @ref coords) to the result array @c r->res. The array is
- *   defined in @c masterData structure, as follows:
+ *   defined in @c TaskData structure, as follows:
  *
  *   @code
  *   @icode core/mechanic.h MASTERDATA
@@ -188,7 +188,7 @@
  *
  *   Currently, @c MECHANIC_DATATYPE is set to @c double, so we need to do
  *   proper casting from integer to double. The result array
- *   has the @c md->mrl size, in this case 3. The @c masterData structure is
+ *   has the @c md->output_length size, in this case 3. The @c TaskData structure is
  *   available for all module functions.
  *
  * - @c hello_worker_out
@@ -214,10 +214,10 @@
 /**
  * Implementation of module_init().
  */
-int hello_init(int mpi_size, int node, moduleInfo* md, configData* d){
+int hello_init(int mpi_size, int node, TaskInfo* md, TaskConfig* d){
 
-  md->irl = 3;
-  md->mrl = 6;
+  md->input_length = 3;
+  md->output_length = 6;
 
   return MECHANIC_TASK_SUCCESS;
 }
@@ -225,7 +225,7 @@ int hello_init(int mpi_size, int node, moduleInfo* md, configData* d){
 /**
  * Implementation of module_cleanup().
  */
-int hello_cleanup(int mpi_size, int node, moduleInfo* md, configData* d){
+int hello_cleanup(int mpi_size, int node, TaskInfo* md, TaskConfig* d){
 
   return MECHANIC_TASK_SUCCESS;
 }
@@ -233,10 +233,10 @@ int hello_cleanup(int mpi_size, int node, moduleInfo* md, configData* d){
 /**
  * Implementation of module_node_in().
  */
-int hello_master_in(int mpi_size, int node, moduleInfo* md, configData* d,
-    masterData* inidata) {
+int hello_master_in(int mpi_size, int node, TaskInfo* md, TaskConfig* d,
+    TaskData* inidata) {
 
-  inidata->res[0] = 99.0;
+  inidata->data[0] = 99.0;
 
   printf("Configuration test:\n");
   printf("name: %s\n", d->name);
@@ -249,11 +249,11 @@ int hello_master_in(int mpi_size, int node, moduleInfo* md, configData* d,
 /**
  * Implementation of module_task_prepare().
  */
-int hello_task_prepare(int node, moduleInfo* md, configData* d,
-    masterData* inidata, masterData* r) {
+int hello_task_prepare(int node, TaskInfo* md, TaskConfig* d,
+    TaskData* inidata, TaskData* r) {
 
-  inidata->res[1] = (double) d->xres;
-  inidata->res[2] = (double) node;
+  inidata->data[1] = (double) d->xres;
+  inidata->data[2] = (double) node;
 
   return MECHANIC_TASK_SUCCESS;
 }
@@ -261,16 +261,16 @@ int hello_task_prepare(int node, moduleInfo* md, configData* d,
 /**
  * Implementation of module_task_process().
  */
-int hello_task_process(int node, moduleInfo* md, configData* d,
-    masterData* inidata, masterData* r)
+int hello_task_process(int node, TaskInfo* md, TaskConfig* d,
+    TaskData* inidata, TaskData* r)
 {
 
-  r->res[0] = (double) r->coords[0];
-  r->res[1] = (double) r->coords[1];
-  r->res[2] = (double) r->coords[2];
-  r->res[3] = inidata->res[0];
-  r->res[4] = inidata->res[1];
-  r->res[5] = inidata->res[2];
+  r->data[0] = (double) r->coords[0];
+  r->data[1] = (double) r->coords[1];
+  r->data[2] = (double) r->coords[2];
+  r->data[3] = inidata->data[0];
+  r->data[4] = inidata->data[1];
+  r->data[5] = inidata->data[2];
 
   return MECHANIC_TASK_SUCCESS;
 }
@@ -278,8 +278,8 @@ int hello_task_process(int node, moduleInfo* md, configData* d,
 /**
  * Implementation of module_node_out().
  */
-int hello_worker_out(int nodes, int node, moduleInfo* md, configData* d,
-    masterData* inidata, masterData* r){
+int hello_worker_out(int nodes, int node, TaskInfo* md, TaskConfig* d,
+    TaskData* inidata, TaskData* r){
 
   mechanic_message(MECHANIC_MESSAGE_INFO, "Hello from worker[%d]\n", node);
 
