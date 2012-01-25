@@ -68,7 +68,7 @@ int arnoldweb_init(int mpi_size, int node, TaskInfo *info, TaskConfig *config) {
  *
  * We prepare here the initial condition for the task. The length of the `inidata->res`
  * vector is allocated according to the `md->input_length` variable. We use the default,
- * two-dimensional mapping of the coordinates of the current task (r->coords).
+ * two-dimensional mapping of the coordinates of the current task (out->coords).
  */
 int arnoldweb_task_prepare(int node, TaskInfo *info, TaskConfig *config, TaskData *in, TaskData *out) {
   double xmin, xmax, ymin, ymax;
@@ -97,7 +97,7 @@ int arnoldweb_task_prepare(int node, TaskInfo *info, TaskConfig *config, TaskDat
  * Implements module_task_process().
  *
  * This function is the heart of the simulation. You connect your software to the
- * Mechanic here. 
+ * Mechanic here. It is called in a task loop, until all tasks are processed.
  *
  * The Arnold web: We take the prepared initial condition and run the smegno() function.
  * After the computations are finished, we return the final result to the master node.
