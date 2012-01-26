@@ -1,13 +1,25 @@
 cmake_minimum_required (VERSION 2.8)
 project (mechanic_module_arnoldweb)
 
+option (LRC "Build with LRC configuration file support" off)
+
 include (CheckIncludeFiles)
 include (CheckLibraryExists)
 
 CHECK_INCLUDE_FILES (mechanic.h HAVE_MECHANIC_H)
 CHECK_LIBRARY_EXISTS (mechanic mechanic_message "" MECHANIC_LIB)
 
+CONFIGURE_FILE (
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/src/config.h
+)
+
 set (CMAKE_C_FLAGS "-std=c99 -lreadconfig")
+
+if (LRC) 
+  add_definitions (-DLRC)
+  set (CMAKE_C_FLAGS "-std=c99 -lreadconfig")
+endif (LRC)
 
 add_subdirectory (src)
 

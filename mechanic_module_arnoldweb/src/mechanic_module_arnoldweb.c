@@ -53,14 +53,60 @@
  * The Arnold Web: Since we are developing the dynamical map, we need to store coordinates
  * of the map and the final state of the system (MEGNO). We also prepare the initial
  * condition for each worker node -- we need here a vector of length 6. 
+ *
+ * One more feature: the Mechanic can handle additional module configuration. To do so, we need 
+ * to define the size of the configuration `options` and call the module_setup_schema().
+ * Since this feature is in development, we decided to use conditional compilation here.
+ * See the README.txt for details.
  */
 int arnoldweb_init(int mpi_size, int node, TaskInfo *info, TaskConfig *config) {
   
   info->output_length = 4;
   info->input_length = 6;
-  
+
+#ifdef LRC
+  info->options = 8;
+#endif
+
   return MECHANIC_TASK_SUCCESS;
 }
+
+#ifdef LRC
+/**
+ * @function
+ * Implements module_setup_schema().
+ *
+ * We specify here the custom module configuration. The structure has the form:
+ * {namespace, variable, value, type}. We must specify the variables and their defaults for the whole 
+ * configuration structure (see `info->options`). We can override the defaults by using the config file (# marks comments):
+ * 
+ * [arnold]
+ * xmin = 0.8
+ * xmax = 1.2
+ * ymin = 0.8
+ * ymax = 1.2
+ * step = 0.25
+ * tend = 20000.0
+ * eps = 0.01
+ * driver = 1 
+ * 
+ * After the configuration is done, we may use it as follows:
+ * > xmin = LRC_option2double("arnold", "xmin", info->moptions);
+ */
+int arnoldweb_setup_schema(TaskInfo *info) {
+
+  info->mconfig[0] = (LRC_configDefaults) {"arnold", "step", "0.25", LRC_DOUBLE};
+  info->mconfig[1] = (LRC_configDefaults) {"arnold", "tend", "1000.0", LRC_DOUBLE};
+  info->mconfig[2] = (LRC_configDefaults) {"arnold", "xmin", "0.8", LRC_DOUBLE};
+  info->mconfig[3] = (LRC_configDefaults) {"arnold", "xmax", "1.2", LRC_DOUBLE};
+  info->mconfig[4] = (LRC_configDefaults) {"arnold", "ymin", "0.8", LRC_DOUBLE};
+  info->mconfig[5] = (LRC_configDefaults) {"arnold", "ymax", "1.2", LRC_DOUBLE};
+  info->mconfig[6] = (LRC_configDefaults) {"arnold", "eps", "0.01", LRC_DOUBLE};
+  info->mconfig[7] = (LRC_configDefaults) {"arnold", "driver", "1", LRC_INT};
+
+  return MECHANIC_TASK_SUCCESS;
+}
+#endif
 
 /**
  * @function
@@ -78,6 +124,13 @@ int arnoldweb_task_prepare(int node, TaskInfo *info, TaskConfig *config, TaskDat
   xmax  = 1.2;
   ymin  = 0.8;
   ymax  = 1.2;         
+
+#ifdef LRC
+  xmin = LRC_option2double("arnold", "xmin", info->moptions);
+  xmax = LRC_option2double("arnold", "xmax", info->moptions);
+  ymin = LRC_option2double("arnold", "ymin", info->moptions);
+  ymax = LRC_option2double("arnold", "ymax", info->moptions);
+#endif
 
   /* Initial condition - angles */
   in->data[0] = 0.131;
@@ -104,10 +157,21 @@ int arnoldweb_task_prepare(int node, TaskInfo *info, TaskConfig *config, TaskDat
  */
 int arnoldweb_task_process(int node, TaskInfo *info, TaskConfig *config, TaskData *in, TaskData *out) {
   double err, xv[6], tend, step, eps, result;
+#ifdef LRC
+  int driver;
+#endif
 
   step  = 0.25*(pow(5,0.5)-1)/2.0;
   tend  = 20000.0;
   eps   = 0.01;
+
+#ifdef LRC  
+  step = LRC_option2double("arnold", "step", info->moptions);
+  step  = step*(pow(5,0.5)-1)/2.0;
+  tend = LRC_option2double("arnold", "tend", info->moptions);
+  eps  = LRC_option2double("arnold", "eps", info->moptions);
+  driver = LRC_option2int("arnold", "driver", info->moptions);
+#endif
 
   /* Initial data */  
   xv[0] = in->data[0];
@@ -118,8 +182,13 @@ int arnoldweb_task_process(int node, TaskInfo *info, TaskConfig *config, TaskDat
   xv[5] = in->data[5];  
 
   /* Numerical integration goes here */
+#ifdef LRC
+  if (driver == 1) result = smegno2(xv, step, tend, eps, &err);
+  if (driver == 2) result = smegno3(xv, step, tend, eps, &err);
+#else  
   result = smegno2(xv, step, tend, eps, &err);
-  
+#endif
+
   /* Assign the master result */
   out->data[0] = xv[3];
   out->data[1] = xv[4];
@@ -128,4 +197,4 @@ int arnoldweb_task_process(int node, TaskInfo *info, TaskConfig *config, TaskDat
 
   return MECHANIC_TASK_SUCCESS;
 }
-
+ 
