@@ -28,24 +28,24 @@
  * For the detailed documentation of datatypes and full list of API functions, 
  * please refer to the technical documentation of the Mechanic at the project website:
  * 
- * http://github.com/mslonina/Mechanic
+ * http://git.astri.umk.pl/projects/mechanic
  *
  * Note: each function should return MECHANIC_TASK_SUCCESS on success or one of the following error codes:
  *
- * - 911 -- MECHANIC_ERR_MPI -- MPI related error
- * - 912 -- MECHANIC_ERR_HDF -- HDF related error
- * - 913 -- MECHANIC_ERR_MODULE -- Module subsystem related error
- * - 914 -- MECHANIC_ERR_SETUP -- Setup subsystem related error
- * - 915 -- MECHANIC_ERR_MEM -- Memory allocation related error
- * - 916 -- MECHANIC_ERR_CHECKPOINT -- Checkpoint subsystem related error
- * - 999 -- MECHANIC_ERR_OTHER -- Any other error
+ * - 811 -- MECHANIC_MODULE_ERR_MPI -- MPI related error
+ * - 812 -- MECHANIC_MODULE_ERR_HDF -- HDF related error
+ * - 813 -- MECHANIC_MODULE_ERR_MODULE -- Module subsystem related error
+ * - 814 -- MECHANIC_MODULE_ERR_SETUP -- Setup subsystem related error
+ * - 815 -- MECHANIC_MODULE_ERR_MEM -- Memory allocation related error
+ * - 816 -- MECHANIC_MODULE_ERR_CHECKPOINT -- Checkpoint subsystem related error
+ * - 888 -- MECHANIC_MODULE_ERR_OTHER -- Any other error
  */
 
 /**
  * @function
  * Implements module_init().
  *
- * This function is called very early during module initialization. We must set up here
+ * This function is called very early during module initialisation. We must set up here
  * some basic information on the master data storage -- the length of the initial
  * condition vector `input_length`, which is sended to each worker node and the length of the
  * master result `output_length`, which is sended from the worker node to the master. 
@@ -57,7 +57,8 @@
  * One more feature: the Mechanic can handle additional module configuration. To do so, we need 
  * to define the size of the configuration `options` and call the module_setup_schema().
  * Since this feature is in development, we decided to use conditional compilation here.
- * See the README.txt for details.
+ * See the README.txt for details. The module configuration is stored in the master
+ * datafile.
  */
 int arnoldweb_init(int mpi_size, int node, TaskInfo *info, TaskConfig *config) {
   
@@ -78,7 +79,7 @@ int arnoldweb_init(int mpi_size, int node, TaskInfo *info, TaskConfig *config) {
  *
  * We specify here the custom module configuration. The structure has the form:
  * {namespace, variable, value, type}. We must specify the variables and their defaults for the whole 
- * configuration structure (see `info->options`). We can override the defaults by using the config file (# marks comments):
+ * configuration structure (the structure is of size `info->options`). We can override the defaults by using the config file (# marks comments):
  * 
  * [arnold]
  * xmin = 0.8
@@ -112,8 +113,8 @@ int arnoldweb_setup_schema(TaskInfo *info) {
  * @function
  * Implements module_task_prepare().
  *
- * We prepare here the initial condition for the task. The length of the `inidata->res`
- * vector is allocated according to the `md->input_length` variable. We use the default,
+ * We prepare here the initial condition for the task. The length of the `in->data`
+ * vector is allocated according to the `info->input_length` variable. We use the default,
  * two-dimensional mapping of the coordinates of the current task (out->coords).
  */
 int arnoldweb_task_prepare(int node, TaskInfo *info, TaskConfig *config, TaskData *in, TaskData *out) {

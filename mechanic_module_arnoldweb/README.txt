@@ -29,7 +29,7 @@ can be enabled during compilation:
 Scripts
 -------
 
-In the `scripts` directory you will find some helper tools for data postprocessing:
+In the `scripts` directory of the Mechanic you will find some helper tools for data postprocessing:
 
 - `run.sh` -- examples how to run the Mechanic
 - `h52ascii-{bash,tcsh}` -- tool to extract ASCII data from the Mechanic datafile (Bash
