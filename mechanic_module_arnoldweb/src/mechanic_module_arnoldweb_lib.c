@@ -114,7 +114,8 @@ double norm(int dim, double *a, int flag) {
 
 /**
  * @function
- * Symplectic MEGNO with the classical Leapfrog integrator
+ * Symplectic MEGNO (Gozdziewski, Breiter & Borczyk, MNRAS, 2008)
+ * with the modifies Leapfrog integrator SABA2 (Laskar & Robutel, CMDA, 2001)
  */
 double smegno2(double *xv0, double step, double tend, double eps, double *err) {
   double c1, c2, d1;
@@ -205,7 +206,8 @@ double smegno2(double *xv0, double step, double tend, double eps, double *err) {
 
 /**
  * @function
- * Symplectic MEGNO with the SABA3 integrator by Robutel & Laskar
+ * Symplectic MEGNO (Gozdziewski, Breiter & Borczyk, MNRAS, 2008)       
+ * with the modifies Leapfrog integrator SABA2 (Laskar & Robutel, CMDA, 2001)
  */
 double smegno3(double *xv0, double step, double tend, double eps,  double *err) {
   double c1, c2, d1, d2;
