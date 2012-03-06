@@ -99,7 +99,7 @@ double variat(double *xv, double *dy, double eps) {
 
 /**
  * @function
- * Normalizes the variational vector (flag = 1) or computes the norm (flag=0)
+ * Normalizes the variational vector (flag = 1)
  */
 double norm(int dim, double *a, int flag) {
   double tmp = 0.0;
@@ -114,8 +114,8 @@ double norm(int dim, double *a, int flag) {
 
 /**
  * @function
- * Symplectic MEGNO with tangent map and modified SABA2 leapfrog integrator 
- * by Laskar & Robutel, Celestial Mechanics and Dyn. Astronomy, 2001
+ * Symplectic MEGNO (Gozdziewski, Breiter & Borczyk, MNRAS, 2008)
+ * with the modified Leapfrog integrator SABA2 (Laskar & Robutel, CMDA, 2001)
  */
 double smegno2(double *xv0, double step, double tend, double eps, double *err) {
   double c1, c2, d1;
@@ -206,8 +206,8 @@ double smegno2(double *xv0, double step, double tend, double eps, double *err) {
 
 /**
  * @function
- * Symplectic MEGNO with tangent map and modified SABA3 leapfrog integrator 
- * by Laskar & Robutel, Celestial Mechanics and Dyn. Astronomy, 2001
+ * Symplectic MEGNO (Gozdziewski, Breiter & Borczyk, MNRAS, 2008)       
+ * with the modified Leapfrog integrator SABA2 (Laskar & Robutel, CMDA, 2001)
  */
 double smegno3(double *xv0, double step, double tend, double eps,  double *err) {
   double c1, c2, d1, d2;
@@ -338,4 +338,3 @@ double smegno3(double *xv0, double step, double tend, double eps,  double *err) 
   *err = maxe;
   return mY1;
 }      
-
