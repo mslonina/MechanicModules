@@ -96,14 +96,22 @@ int arnoldweb_init(int mpi_size, int node, TaskInfo *info, TaskConfig *config) {
  */
 int arnoldweb_setup_schema(TaskInfo *info) {
 
-  info->mconfig[0] = (LRC_configDefaults) {"arnold", "step", "0.25", LRC_DOUBLE};
-  info->mconfig[1] = (LRC_configDefaults) {"arnold", "tend", "1000.0", LRC_DOUBLE};
-  info->mconfig[2] = (LRC_configDefaults) {"arnold", "xmin", "0.8", LRC_DOUBLE};
-  info->mconfig[3] = (LRC_configDefaults) {"arnold", "xmax", "1.2", LRC_DOUBLE};
-  info->mconfig[4] = (LRC_configDefaults) {"arnold", "ymin", "0.8", LRC_DOUBLE};
-  info->mconfig[5] = (LRC_configDefaults) {"arnold", "ymax", "1.2", LRC_DOUBLE};
-  info->mconfig[6] = (LRC_configDefaults) {"arnold", "eps", "0.01", LRC_DOUBLE};
-  info->mconfig[7] = (LRC_configDefaults) {"arnold", "driver", "1", LRC_INT};
+  info->mconfig[0] = (LRC_configDefaults) {
+    .space="arnold", .name="step", .value="0.25", .type=LRC_DOUBLE};
+  info->mconfig[1] = (LRC_configDefaults) {
+    .space="arnold", .name="tend", .value="1000.0", .type=LRC_DOUBLE};
+  info->mconfig[2] = (LRC_configDefaults) {
+    .space="arnold", .name="xmin", .value="0.8", .type=LRC_DOUBLE};
+  info->mconfig[3] = (LRC_configDefaults) {
+    .space="arnold", .name="xmax", .value="1.2", .type=LRC_DOUBLE};
+  info->mconfig[4] = (LRC_configDefaults) {
+    .space="arnold", .name="ymin", .value="0.8", .type=LRC_DOUBLE};
+  info->mconfig[5] = (LRC_configDefaults) {
+    .space="arnold", .name="ymax", .value="1.2", .type=LRC_DOUBLE};
+  info->mconfig[6] = (LRC_configDefaults) {
+    .space="arnold", .name="eps", .value="0.01", .type=LRC_DOUBLE};
+  info->mconfig[7] = (LRC_configDefaults) {
+    .space="arnold", .name="driver", .value="1", .type=LRC_INT};
 
   return MECHANIC_TASK_SUCCESS;
 }
